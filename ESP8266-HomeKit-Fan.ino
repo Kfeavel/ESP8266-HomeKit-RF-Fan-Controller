@@ -28,8 +28,10 @@
 
 void setup() {
   Serial.begin(115200);
+  ets_update_cpu_frequency(160);
+  
   wifi_connect();
-  //homekit_storage_reset(); // to remove the previous HomeKit pairing storage when you first run this new HomeKit example
+  // homekit_storage_reset(); // to remove the previous HomeKit pairing storage when you first run this new HomeKit example
   my_homekit_setup();
 }
 
@@ -46,29 +48,39 @@ void loop() {
 // access your HomeKit characteristics defined in my_accessory.c
 extern "C" homekit_server_config_t config;
 extern "C" homekit_characteristic_t cha_light_on;
+extern "C" homekit_characteristic_t cha_fan_on;
+extern "C" homekit_characteristic_t cha_fan_speed;
 
 static uint32_t next_heap_millis = 0;
 
-#define PIN_SWITCH 2
-
 //Called when the switch value is changed by iOS Home APP
-void cha_switch_on_setter(const homekit_value_t value) {
+void cha_light_on_setter(const homekit_value_t value) {
   bool on = value.bool_value;
   cha_light_on.value.bool_value = on;  //sync the value
-  LOG_D("Switch: %s", on ? "ON" : "OFF");
-  digitalWrite(PIN_SWITCH, on ? LOW : HIGH);
+  LOG_D("Light: %s", on ? "ON" : "OFF");
+}
+
+void cha_fan_on_setter(const homekit_value_t value) {
+  bool on = value.bool_value;
+  cha_fan_on.value.bool_value = on;  //sync the value
+  LOG_D("Fan: %s", on ? "ON" : "OFF");
+}
+
+void cha_fan_speed_setter(const homekit_value_t value) {
+  uint8_t speed = value.float_value;
+  cha_fan_speed.value.float_value = speed;  //sync the value
+  LOG_D("Speed: %f", speed);
 }
 
 void my_homekit_setup() {
-  pinMode(PIN_SWITCH, OUTPUT);
-  digitalWrite(PIN_SWITCH, HIGH);
-
   //Add the .setter function to get the switch-event sent from iOS Home APP.
   //The .setter should be added before arduino_homekit_setup.
   //HomeKit sever uses the .setter_ex internally, see homekit_accessories_init function.
   //Maybe this is a legacy design issue in the original esp-homekit library,
   //and I have no reason to modify this "feature".
-  cha_light_on.setter = cha_switch_on_setter;
+  cha_light_on.setter = cha_light_on_setter;
+  cha_fan_on.setter = cha_fan_on_setter;
+  cha_fan_speed.setter = cha_fan_speed_setter;
   arduino_homekit_setup(&config);
 
   //report the switch value to HomeKit if it is changed (e.g. by a physical button)
@@ -78,7 +90,7 @@ void my_homekit_setup() {
 }
 
 void debug_print_heap() {
-#ifdef DEBUG
+#ifdef DEBUG_HEAP
   const uint32_t t = millis();
   if (t > next_heap_millis) {
     // show heap info every 5 seconds
