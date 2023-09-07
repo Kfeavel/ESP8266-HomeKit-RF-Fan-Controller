@@ -1,36 +1,29 @@
 /*
- * switch.ino
- *
- *  Created on: 2020-05-15
- *      Author: Mixiaoxiao (Wang Bin)
- *
- * HAP section 8.38 Switch
- * An accessory contains a switch.
- *
- * This example shows how to:
- * 1. define a switch accessory and its characteristics (in my_accessory.c).
- * 2. get the switch-event sent from iOS Home APP.
- * 3. report the switch value to HomeKit.
- *
- * You should:
- * 1. read and use the Example01_TemperatureSensor with detailed comments
- *    to know the basic concept and usage of this library before other examples。
- * 2. erase the full flash or call homekit_storage_reset() in setup()
- *    to remove the previous HomeKit pairing storage and
- *    enable the pairing with the new accessory of this new HomeKit example.
+ * ESP8266-HomeKit-Fan.ino
  */
 
 #include <Arduino.h>
+#include <RCSwitch.h>
 #include <arduino_homekit_server.h>
 #include "wifi_info.h"
 
 #define LOG_D(fmt, ...)   printf_P(PSTR(fmt "\n") , ##__VA_ARGS__);
+
+static RCSwitch rf315Switch = RCSwitch();
+
+//==============================
+// Arduino
+//==============================
 
 void setup() {
   // ESP8266 setup
   Serial.begin(115200);
   ets_update_cpu_frequency(160);
   
+  // 315 Mhz transmitter setup
+  rf315Switch.enableTransmit(0);
+  rf315Switch.setProtocol(6);
+
   // HomeKit setup
   wifi_connect();
   // homekit_storage_reset(); // to remove the previous HomeKit pairing storage when you first run this new HomeKit example
@@ -43,52 +36,73 @@ void loop() {
 }
 
 //==============================
+// RF 315 Mhz Helpers
+//==============================
+
+static void transmitRFData(unsigned long data, unsigned int len) {
+  digitalWrite(BUILTIN_LED, LOW);
+  rf315Switch.send(data, len);
+  digitalWrite(BUILTIN_LED, HIGH);
+}
+
+//==============================
 // HomeKit setup and loop
 //==============================
 
 // access your HomeKit characteristics defined in my_accessory.c
 extern "C" homekit_server_config_t config;
 extern "C" homekit_characteristic_t cha_light_on;
-extern "C" homekit_characteristic_t cha_fan_on;
+extern "C" homekit_characteristic_t cha_fan_active;
 extern "C" homekit_characteristic_t cha_fan_speed;
 
 static uint32_t next_heap_millis = 0;
 
-//Called when the switch value is changed by iOS Home APP
+// Called when the switch value is changed by iOS Home APP
 static void cha_light_on_setter(const homekit_value_t value) {
   bool on = value.bool_value;
-  cha_light_on.value.bool_value = on;  //sync the value
+  cha_light_on.value.bool_value = on;  // sync the value
+
   LOG_D("Light: %s", on ? "ON" : "OFF");
+  transmitRFData(0xBF9, 12);
 }
 
 static void cha_fan_on_setter(const homekit_value_t value) {
   bool on = value.bool_value;
-  cha_fan_on.value.bool_value = on;  //sync the value
+  cha_fan_active.value.bool_value = on;  // sync the value
+  
   LOG_D("Fan: %s", on ? "ON" : "OFF");
+  transmitRFData(0xFB9, 12);
 }
 
 static void cha_fan_speed_setter(const homekit_value_t value) {
-  uint8_t speed = value.float_value;
-  cha_fan_speed.value.float_value = speed;  //sync the value
+  float speed = value.float_value;
+  cha_fan_speed.value.float_value = speed;  // sync the value
+
   LOG_D("Speed: %f", speed);
-}
+  if (speed > 0 && speed < 33) {
+    transmitRFData(0x7F9, 12);
+  } else if (speed > 33 && speed < 66) {
+    transmitRFData(0xEF9, 12);
+  } else if (speed > 66 && speed < 100) {
+    transmitRFData(0xF79, 12);
+  }
 
-static void my_homekit_setup() {
-  //Add the .setter function to get the switch-event sent from iOS Home APP.
-  //The .setter should be added before arduino_homekit_setup.
-  //HomeKit sever uses the .setter_ex internally, see homekit_accessories_init function.
-  //Maybe this is a legacy design issue in the original esp-homekit library,
-  //and I have no reason to modify this "feature".
-  cha_light_on.setter = cha_light_on_setter;
-  cha_fan_on.setter = cha_fan_on_setter;
-  cha_fan_speed.setter = cha_fan_speed_setter;
-  arduino_homekit_setup(&config);
-
-  //report the switch value to HomeKit if it is changed (e.g. by a physical button)
-  //bool switch_is_on = true/false;
   //cha_switch_on.value.bool_value = switch_is_on;
   //homekit_characteristic_notify(&cha_switch_on, cha_switch_on.value);
 }
+
+static void my_homekit_setup() {
+  // Add the .setter function to get the switch-event sent from iOS Home APP.
+  // The .setter should be added before arduino_homekit_setup.
+  cha_light_on.setter = cha_light_on_setter;
+  cha_fan_active.setter = cha_fan_on_setter;
+  cha_fan_speed.setter = cha_fan_speed_setter;
+  arduino_homekit_setup(&config);
+}
+
+//==============================
+// Debugging
+//==============================
 
 static void debug_print_heap() {
   const uint32_t t = millis();

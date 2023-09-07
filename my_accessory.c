@@ -29,9 +29,9 @@ homekit_characteristic_t cha_light_name = HOMEKIT_CHARACTERISTIC_(NAME, "Light")
 // Fan (HAP ...)
 
 // format: bool; HAP section 9.70; write the .setter function to get the switch-event sent from iOS Home APP.
-homekit_characteristic_t cha_fan_on = HOMEKIT_CHARACTERISTIC_(ON, false);
+homekit_characteristic_t cha_fan_active = HOMEKIT_CHARACTERISTIC_(ACTIVE, false);
 // format: uint8_t
-homekit_characteristic_t cha_fan_speed = HOMEKIT_CHARACTERISTIC_(ROTATION_SPEED, 0.0);
+homekit_characteristic_t cha_fan_speed = HOMEKIT_CHARACTERISTIC_(ROTATION_SPEED, 0);
 // // format: string; HAP section 9.62; max length 64
 homekit_characteristic_t cha_fan_name = HOMEKIT_CHARACTERISTIC_(NAME, "Fan");
 
@@ -46,8 +46,8 @@ homekit_accessory_t *accessories[] = {
           HOMEKIT_CHARACTERISTIC(IDENTIFY, fan_identify),
           NULL
       }),
-      HOMEKIT_SERVICE(FAN, .primary=true, .characteristics=(homekit_characteristic_t*[]){
-        &cha_fan_on,
+      HOMEKIT_SERVICE(FAN2, .primary=true, .characteristics=(homekit_characteristic_t*[]){
+        &cha_fan_active,
         &cha_fan_speed,
         &cha_fan_name,
         NULL
