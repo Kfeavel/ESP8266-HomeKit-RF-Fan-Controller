@@ -22,20 +22,14 @@
 
 #include <Arduino.h>
 #include <arduino_homekit_server.h>
-#include <RCSwitch.h>
 #include "wifi_info.h"
 
 #define LOG_D(fmt, ...)   printf_P(PSTR(fmt "\n") , ##__VA_ARGS__);
-
-static RCSwitch rf315Switch = RCSwitch();
 
 void setup() {
   // ESP8266 setup
   Serial.begin(115200);
   ets_update_cpu_frequency(160);
-
-  // RF 315 Mhz receiver setup
-  rf315Switch.enableReceive(16);
   
   // HomeKit setup
   wifi_connect();
@@ -44,7 +38,6 @@ void setup() {
 }
 
 void loop() {
-  rf315_loop();
   arduino_homekit_loop();
   delay(10);
 }
@@ -95,18 +88,6 @@ static void my_homekit_setup() {
   //bool switch_is_on = true/false;
   //cha_switch_on.value.bool_value = switch_is_on;
   //homekit_characteristic_notify(&cha_switch_on, cha_switch_on.value);
-}
-
-static void rf315_loop() {
-  if (rf315Switch.available()) {
-    unsigned long value = rf315Switch.getReceivedValue();
-
-    digitalWrite(LED_BUILTIN, LOW);
-    LOG_D("Recieved value: 0x%X", value);
-    digitalWrite(LED_BUILTIN, HIGH);
-
-    rf315Switch.resetAvailable();
-  }
 }
 
 static void debug_print_heap() {
