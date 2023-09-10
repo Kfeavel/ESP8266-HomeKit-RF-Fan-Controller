@@ -76,7 +76,7 @@ homekit_accessory_t *accessories[] = {
 
 homekit_server_config_t config = {
     .accessories = accessories,
-    .password = "514-18-136"
+    .password = "111-11-111"
 };
 
 

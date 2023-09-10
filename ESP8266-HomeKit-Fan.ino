@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 #include <RCSwitch.h>
+#include <EasyButton.h>
 #include <arduino_homekit_server.h>
 #include "wifi_info.h"
 
@@ -11,22 +12,29 @@
 
 static RCSwitch rf315Switch = RCSwitch();
 
+static void transmitRFData(unsigned long data, unsigned int len);
+
 //==============================
 // Arduino
 //==============================
 
 void setup() {
   // ESP8266 setup
-  Serial.begin(115200);
+  Serial.begin(9600);
   ets_update_cpu_frequency(160);
+  pinMode(LED_BUILTIN, OUTPUT);
   
   // 315 Mhz transmitter setup
-  rf315Switch.enableTransmit(0);
+  // rf315Switch.enableReceive(4); // D2
+  rf315Switch.enableTransmit(10); // SD3
   rf315Switch.setProtocol(6);
+  rf315Switch.setPulseLength(400);
+  rf315Switch.setRepeatTransmit(10);
+
+  // homekit_storage_reset();
 
   // HomeKit setup
   wifi_connect();
-  // homekit_storage_reset(); // to remove the previous HomeKit pairing storage when you first run this new HomeKit example
   my_homekit_setup();
 }
 
@@ -40,9 +48,7 @@ void loop() {
 //==============================
 
 static void transmitRFData(unsigned long data, unsigned int len) {
-  digitalWrite(BUILTIN_LED, LOW);
   rf315Switch.send(data, len);
-  digitalWrite(BUILTIN_LED, HIGH);
 }
 
 //==============================
@@ -59,22 +65,27 @@ static uint32_t next_heap_millis = 0;
 
 // Called when the switch value is changed by iOS Home APP
 static void cha_light_on_setter(const homekit_value_t value) {
+  digitalWrite(BUILTIN_LED, LOW);
   bool on = value.bool_value;
   cha_light_on.value.bool_value = on;  // sync the value
 
   LOG_D("Light: %s", on ? "ON" : "OFF");
   transmitRFData(0xBF9, 12);
+  digitalWrite(BUILTIN_LED, HIGH);
 }
 
 static void cha_fan_on_setter(const homekit_value_t value) {
+  digitalWrite(BUILTIN_LED, LOW);
   bool on = value.bool_value;
   cha_fan_active.value.bool_value = on;  // sync the value
   
   LOG_D("Fan: %s", on ? "ON" : "OFF");
   transmitRFData(0xFB9, 12);
+  digitalWrite(BUILTIN_LED, HIGH);
 }
 
 static void cha_fan_speed_setter(const homekit_value_t value) {
+  digitalWrite(BUILTIN_LED, LOW);
   float speed = value.float_value;
   cha_fan_speed.value.float_value = speed;  // sync the value
 
@@ -87,6 +98,7 @@ static void cha_fan_speed_setter(const homekit_value_t value) {
     transmitRFData(0xF79, 12);
   }
 
+  digitalWrite(BUILTIN_LED, HIGH);
   //cha_switch_on.value.bool_value = switch_is_on;
   //homekit_characteristic_notify(&cha_switch_on, cha_switch_on.value);
 }
