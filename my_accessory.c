@@ -10,11 +10,8 @@
 #include <homekit/characteristics.h>
 
 void light_identify(homekit_value_t _value) {
-  printf("accessory identify\n");
-}
-
-void fan_identify(homekit_value_t _value) {
-  printf("accessory identify\n");
+  // TODO: Blink the light
+  printf("TODO: Identify the ceiling fan light\n");
 }
 
 // Light
@@ -38,12 +35,12 @@ homekit_characteristic_t cha_fan_name = HOMEKIT_CHARACTERISTIC_(NAME, "Fan");
 homekit_accessory_t *accessories[] = {
     HOMEKIT_ACCESSORY(.id=1, .category=homekit_accessory_category_fan, .services=(homekit_service_t*[]) {
       HOMEKIT_SERVICE(ACCESSORY_INFORMATION, .characteristics=(homekit_characteristic_t*[]) {
-          HOMEKIT_CHARACTERISTIC(NAME, "Fan"),
+          HOMEKIT_CHARACTERISTIC(NAME, "Ceiling Fan"),
           HOMEKIT_CHARACTERISTIC(MANUFACTURER, "AI Thinker"),
           HOMEKIT_CHARACTERISTIC(SERIAL_NUMBER, "MJBPJ-CMTHH-8YHX5"),
           HOMEKIT_CHARACTERISTIC(MODEL, "ESP8266MOD"),
           HOMEKIT_CHARACTERISTIC(FIRMWARE_REVISION, "1.0"),
-          HOMEKIT_CHARACTERISTIC(IDENTIFY, fan_identify),
+          HOMEKIT_CHARACTERISTIC(IDENTIFY, light_identify),
           NULL
       }),
       HOMEKIT_SERVICE(FAN2, .primary=true, .characteristics=(homekit_characteristic_t*[]){
@@ -56,7 +53,7 @@ homekit_accessory_t *accessories[] = {
     }),
     HOMEKIT_ACCESSORY(.id=2, .category=homekit_accessory_category_lightbulb, .services=(homekit_service_t*[]) {
       HOMEKIT_SERVICE(ACCESSORY_INFORMATION, .characteristics=(homekit_characteristic_t*[]) {
-          HOMEKIT_CHARACTERISTIC(NAME, "Light"),
+          HOMEKIT_CHARACTERISTIC(NAME, "Ceiling Fan Light"),
           HOMEKIT_CHARACTERISTIC(MANUFACTURER, "AI Thinker"),
           HOMEKIT_CHARACTERISTIC(SERIAL_NUMBER, "MJBPJ-CMTHH-8YHX5"),
           HOMEKIT_CHARACTERISTIC(MODEL, "ESP8266MOD"),
