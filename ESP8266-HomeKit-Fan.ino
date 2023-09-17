@@ -78,9 +78,11 @@ void loop(void) {
 static void external_fan_update(float speed) {
     cha_fan_speed.value.float_value = speed;
     homekit_characteristic_notify(&cha_fan_speed, cha_fan_speed.value);
+    LOG_D("[SET] Speed: %f", speed);
 
     cha_fan_on.value.bool_value = (speed > 0);
     homekit_characteristic_notify(&cha_fan_on, cha_fan_on.value);
+    LOG_D("[SET] Fan on: %s", (cha_light_on.value.bool_value ? "ON" : "OFF"));
 }
 
 static void receive_rf_update(void) {
@@ -104,9 +106,7 @@ static void receive_rf_update(void) {
       case FAN_RD_DATA_FAN_TOGGLE:
         // Fan power button was pressed -- only turns fan off if already on
         if (cha_fan_on.value.bool_value) {
-          cha_fan_on.value.bool_value = false;
-          homekit_characteristic_notify(&cha_fan_on, cha_fan_on.value);
-          LOG_D("[SET] Fan on: %s", (cha_light_on.value.bool_value ? "ON" : "OFF"));
+          external_fan_update(0.0f);
         }
         break;
 
